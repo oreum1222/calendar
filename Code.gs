@@ -231,9 +231,10 @@ function sendReminders(){
     if(name!==OWNER && mine.length===0) return;
     if(name===OWNER && mine.length===0 && digestRows.length===0) return;
 
-    var today0=mine.filter(function(it){return ddays(it.due,today)===0;}).length;
-    var over=mine.filter(function(it){return ddays(it.due,today)<0;}).length;
-    var cnt='이번 마감 '+mine.length+(today0?(' · 오늘 '+today0):'')+(over?(' · 지남 '+over):'');
+    // 긴급 = 미체크 + 내일까지(지남·오늘·D-1) → 독촉 대상
+    var urgent=mine.filter(function(it){return ddays(it.due,today)<=1;});
+    var rest=mine.filter(function(it){return ddays(it.due,today)>1;});
+    var cnt='마감 '+mine.length+'건'+(urgent.length?(' · 임박 '+urgent.length):'');
 
     var html=''
       +'<div style="font-family:\'Apple SD Gothic Neo\',\'Malgun Gothic\',sans-serif;max-width:600px;margin:0 auto;color:#222">'
@@ -244,12 +245,21 @@ function sendReminders(){
       +'</div>'
       +'<div style="border:1px solid #e6e6e6;border-top:none;border-radius:0 0 12px 12px;padding:14px 14px 18px">';
 
-    html+='<div style="font-size:13px;font-weight:700;color:#1f6f54;margin:4px 2px 8px">내 마감</div>';
-    if(mine.length){
+    if(urgent.length){
+      html+='<div style="background:#fbe6e3;border:1px solid #e8c9be;border-left:4px solid #b3261e;border-radius:10px;padding:11px 13px;margin:2px 2px 10px">'
+        +'<div style="font-weight:700;color:#b3261e;font-size:14px">[긴급] 내일까지 마감인데 아직 미체크 '+urgent.length+'건</div>'
+        +'<div style="font-size:12px;color:#7a3b2f;margin-top:2px">오늘 안에 처리하고 캘린더에서 체크해주세요.</div></div>';
       html+='<table style="width:100%;border-collapse:collapse">';
-      mine.forEach(function(it){ html+=rowHTML(it,today,''); });
+      urgent.forEach(function(it){ html+=rowHTML(it,today,''); });
       html+='</table>';
-    } else {
+    }
+    if(rest.length){
+      html+='<div style="font-size:13px;font-weight:700;color:#1f6f54;margin:'+(urgent.length?'16':'4')+'px 2px 8px">다가오는 마감</div>';
+      html+='<table style="width:100%;border-collapse:collapse">';
+      rest.forEach(function(it){ html+=rowHTML(it,today,''); });
+      html+='</table>';
+    }
+    if(!mine.length){
       html+='<div style="font-size:13px;color:#888;padding:6px 2px">처리할 본인 마감이 없습니다. 수고하셨어요.</div>';
     }
 
@@ -264,7 +274,10 @@ function sendReminders(){
     html+='<div style="font-size:11px;color:#aaa;text-align:center;margin-top:12px">처리한 항목은 캘린더에서 본인 PIN으로 체크하면 다음 메일에서 빠집니다.</div>';
     html+='</div></div>';
 
-    MailApp.sendEmail({to:email, subject:'[오름] 마감 리마인드 · '+cnt+' ('+stamp+')', htmlBody:html});
+    var subj = urgent.length
+      ? '[오름][긴급] 내일까지 미체크 '+urgent.length+'건 — '+name+' ('+stamp+')'
+      : '[오름] 마감 리마인드 · '+cnt+' ('+stamp+')';
+    MailApp.sendEmail({to:email, subject:subj, htmlBody:html});
     sent++;
   });
   Logger.log('reminders sent: '+sent);

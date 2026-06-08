@@ -126,6 +126,7 @@
   .sdot{width:7px;height:7px;border-radius:50%;}
   .sdot.todo{background:var(--coral);} .sdot.doing{background:var(--blue);} .sdot.done{background:var(--mint);} .sdot.past{background:var(--t3);}
   .memo{margin-top:7px;font-size:12.5px;color:var(--t2);line-height:1.6;}
+  .memo.hot{color:var(--coral);font-weight:700;background:var(--coralG);border:1px solid rgba(255,107,138,.25);border-radius:8px;padding:6px 10px;display:inline-block;}
   .eact{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;}
   .ghost{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--bdr);background:var(--card2);
     border-radius:9px;padding:7px 11px;font-size:12px;font-weight:600;color:var(--mint);cursor:pointer;font-family:inherit;transition:.12s;}
@@ -361,7 +362,7 @@ const DEMO = [
   ["네이버 밴드 전원 가입","2026-06-07","행정","전체","doing","없음","공지 체계 일원화. 진도·범위를 밴드 공지 댓글로","https://band.us/n/a0a3bbwaO1F0S"],
   ["블로그+산사모 글쓰기","2026-06-07","홍보","전체","doing","매주","주 1회. 내 반은 내가 홍보. 일요일 마감","" ],
   ["시험지 노션 취합","2026-06-08","행정","조교전체","doing","없음","학교별 시험지 PDF·한글 노션 업로드(조교)","" ],
-  ["수능특강 영상 촬영","2026-06-12","행정","은규T","doing","없음","독서부터, 남은 문학","" ],
+  ["수능특강 영상 촬영","2026-06-12","행정","은규T, 가경T, 다미T","doing","없음","!하루에 2개 이상 업로드! · 독서부터, 남은 문학","" ],
   ["2021 고2 모고 분석지(2차분)","2026-06-11","모고","지연T","todo","없음","목요일까지","" ],
   ["기말고사 시작(관내 고등)","2026-06-26","내신","전체","todo","없음","6월 말~7월 초 시험기간","" ],
   ["고3 설명회(학습법+논술)","2026-05-21","설명회","전체","done","없음","완료","" ],
@@ -574,7 +575,7 @@ function evHTML(e){
         <span class="cat">${esc(e.cat)}</span>${rep}
         <span>${ds}</span>
       </div>
-      ${e.memo?`<div class="memo">${esc(e.memo)}</div>`:""}
+      ${e.memo?(e.memo.trim().startsWith("!")?`<div class="memo hot">${esc(e.memo.replace(/^!+\s*/,""))}</div>`:`<div class="memo">${esc(e.memo)}</div>`):""}
       ${chk}
       <div class="eact"><button class="ghost" onclick='copyRemind(${e._idx})'>${ICON.copy}독촉문구 복사</button>${link}</div>
     </div></article>`;
