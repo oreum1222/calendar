@@ -337,6 +337,8 @@ const CONFIG = {
   categories: ["설명회","내신","교재","출제","모고","행정","홍보"],
   // 이달의 목표 배너(상단 강조). text를 비우면 숨김.
   goal: { tag:"6월 목표", text:"학교별 내신 대비 교재 제작", desc:"학교별 시험범위 확정 → 교재 제작·검수 → 배부. 6월 최우선." },
+  // 화면에서 숨길 일정 제목(시트는 그대로 둬도 화면엔 안 뜸)
+  hideTitles: ["모고 진도(주 2회)"],
   weeksBack: 3, weeksAhead: 6,
   reminderTemplate: (e,d)=>`[오름] ${d>0?("D-"+d):(d===0?"D-DAY":"기한 지남")} 리마인드\n· ${e.title}\n· 기한 ${e.due} / 담당 ${e.owner}\n· 확인·처리 후 '완료'로 회신 부탁드립니다`,
 };
@@ -465,7 +467,8 @@ async function load(){let rows=DEMO;CHECKS={};DEMOMODE=true;
     else if(CONFIG.sheetCsvUrl){const r=await fetch(CONFIG.sheetCsvUrl);const csv=parseCSV(await r.text());csv.shift();rows=csv;DEMOMODE=false;}
   }catch(err){console.warn("로드 실패, 데모로 대체",err);rows=DEMO;CHECKS={};DEMOMODE=true;}
   $("#demoBanner").style.display=DEMOMODE?"inline-flex":"none";
-  ALL=expand(rows.map(toEvent));renderGoal();buildFilters();renderIdentity();applyLayout();render();}
+  const hide=CONFIG.hideTitles||[];
+  ALL=expand(rows.map(toEvent).filter(e=>!hide.includes(e.title)));renderGoal();buildFilters();renderIdentity();applyLayout();render();}
 
 /* ============================================================ 본인 식별(PIN) */
 async function verifyPin(name,pin){
