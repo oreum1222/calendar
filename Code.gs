@@ -165,7 +165,13 @@ function assigneesOf(owner, roster){
   var s=String(owner||'전체').trim();
   if(s===''||s==='전체') return roster.teachers.slice();
   if(s==='조교전체') return roster.assistants.slice();
-  return s.split(/[,·、\/]+/).map(function(x){return x.trim();}).filter(function(x){return x;});
+  var out=[];
+  s.split(/[,·、\/]+/).map(function(x){return x.trim();}).filter(function(x){return x;}).forEach(function(tok){
+    if(tok==='전체') out=out.concat(roster.teachers);
+    else if(tok==='조교전체') out=out.concat(roster.assistants);
+    else out.push(tok);
+  });
+  return out.filter(function(v,i){return out.indexOf(v)===i;});
 }
 function occurrences(dueStr, repeat, start, end){
   var res=[]; if(!dueStr) return res;

@@ -333,7 +333,7 @@ const CONFIG = {
   apiUrl: "https://script.google.com/macros/s/AKfycbycR20HiYZS9LkxMr2vbEiRLflfWlqmLdydtoj_CKTgacLsh91hYaNCXs5AfwKwAER4Pw/exec",
   teachers: ["가경T","은규T","지연T","다미T","해솔T","원철T"],   // 강사 = '전체'의 구성원
   assistants: ["이유섭","오수아","김주은","백수정","김규민","김재희","장서윤","정경은","진채현"], // 조교 9명 — '전체'엔 미포함. 개별 이름 또는 '조교전체'로 배정
-  categories: ["설명회","내신","교재","모고","행정","홍보"],
+  categories: ["설명회","내신","교재","출제","모고","행정","홍보"],
   // 이달의 목표 배너(상단 강조). text를 비우면 숨김.
   goal: { tag:"6월 목표", text:"학교별 내신 대비 교재 제작", desc:"학교별 시험범위 확정 → 교재 제작·검수 → 배부. 6월 최우선." },
   weeksBack: 3, weeksAhead: 6,
@@ -353,6 +353,10 @@ const DEMO = [
   ["기말 대비반 홍보글(블로그)","2026-06-07","홍보","전체","todo","없음","반별 시험범위 녹여서. 썸네일·모바일 필수","" ],
   ["5월 가정통신문 발송","2026-06-07","행정","전체","doing","없음","모고진단 입력 기반 자동 생성","" ],
   ["6월 내신 대비 교재 배부","2026-06-10","교재","전체","todo","없음","교재비 전원 수납. 시험범위 확정되는 대로 발주·배부","" ],
+  ["한티메가 교재 1차 마감","2026-06-15","교재","가경T, 조교전체","todo","없음","★ 중요 · 가경T + 조교 전원","" ],
+  ["CSM 가천대 시즌1 강의 촬영","2026-06-20","출제","가경T, 다미T, 원철T","doing","없음","촬영 기간 6/14~6/20","" ],
+  ["CSM 가천대 시즌2 출제 마감","2026-06-20","출제","다미T, 원철T","todo","없음","가천대 약술 시즌2","" ],
+  ["CSM 가천대 시즌3 출제 마감","2026-06-30","출제","다미T, 원철T","todo","없음","가천대 약술 시즌3","" ],
   ["기말 교재 발주(밤새프린트)","2026-06-09","교재","다미T","doing","없음","100g A4·무광 스노우지 표지, 필요일 일주일 전 발주","" ],
   ["네이버 밴드 전원 가입","2026-06-07","행정","전체","doing","없음","공지 체계 일원화. 진도·범위를 밴드 공지 댓글로","https://band.us/n/a0a3bbwaO1F0S"],
   ["블로그+산사모 글쓰기","2026-06-07","홍보","전체","doing","매주","주 1회. 내 반은 내가 홍보. 일요일 마감","" ],
@@ -407,7 +411,14 @@ function parseCSV(text){const rows=[];let row=[],cur="",q=false;
 function parseAssignees(s){s=(s||"전체").trim();
   if(s===""||s==="전체")return [...CONFIG.teachers];
   if(s==="조교전체")return [...CONFIG.assistants];
-  return s.split(/[,·、\/]+/).map(x=>x.trim()).filter(Boolean);}
+  // 토큰 혼합 지원: "가경T, 조교전체" → 가경T + 조교 전원
+  let out=[];
+  s.split(/[,·、\/]+/).map(x=>x.trim()).filter(Boolean).forEach(tok=>{
+    if(tok==="전체") out=out.concat(CONFIG.teachers);
+    else if(tok==="조교전체") out=out.concat(CONFIG.assistants);
+    else out.push(tok);
+  });
+  return out.filter((v,i)=>out.indexOf(v)===i);}
 function toEvent(a){const[title,due,cat,owner,status,repeat,memo,link]=a;
   const o=(owner||"전체").trim();
   return{title:(title||"").trim(),due:(due||"").trim(),cat:(cat||"행정").trim(),owner:o,assignees:parseAssignees(o),
