@@ -40,6 +40,18 @@
 
   .page{max-width:1120px;margin:0 auto;padding:22px 22px 70px;}
 
+  /* ===== 이달의 목표 배너 ===== */
+  .goal{position:relative;overflow:hidden;background:linear-gradient(100deg,var(--mintG),rgba(74,227,192,.02));
+    border:1px solid rgba(74,227,192,.32);border-left:3px solid var(--mint);border-radius:14px;
+    padding:16px 18px;margin-bottom:16px;}
+  .goal::after{content:'';position:absolute;top:-40%;right:-60px;width:240px;height:240px;
+    background:radial-gradient(circle,var(--mintG) 0%,transparent 70%);pointer-events:none;}
+  .goal .gtag{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;letter-spacing:2px;
+    text-transform:uppercase;color:var(--mint);}
+  .goal .gtag .ic{width:14px;height:14px;}
+  .goal .gtext{font-family:var(--serif);font-size:21px;font-weight:700;color:var(--t1);margin-top:5px;letter-spacing:-.3px;line-height:1.3;}
+  .goal .gdesc{font-size:12.5px;color:var(--t2);margin-top:5px;}
+
   /* ===== 툴바 ===== */
   .bar{background:var(--card);border:1px solid var(--bdr);border-radius:16px;padding:16px 18px;margin-bottom:18px;}
   .summary{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--bdr);margin-bottom:14px;}
@@ -253,6 +265,7 @@
 </header>
 
 <main class="page">
+  <div class="goal" id="goalBanner" style="display:none"></div>
   <section class="bar">
     <div class="summary">
       <div id="sumWrap" style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;"></div>
@@ -321,6 +334,8 @@ const CONFIG = {
   teachers: ["가경T","은규T","지연T","다미T","해솔T","원철T"],   // 강사 = '전체'의 구성원
   assistants: ["이유섭","오수아","김주은","백수정","김규민","김재희","장서윤","정경은","진채현"], // 조교 9명 — '전체'엔 미포함. 개별 이름 또는 '조교전체'로 배정
   categories: ["설명회","내신","교재","모고","행정","홍보"],
+  // 이달의 목표 배너(상단 강조). text를 비우면 숨김.
+  goal: { tag:"6월 목표", text:"학교별 내신 대비 교재 제작", desc:"학교별 시험범위 확정 → 교재 제작·검수 → 배부. 6월 최우선." },
   weeksBack: 3, weeksAhead: 6,
   reminderTemplate: (e,d)=>`[오름] ${d>0?("D-"+d):(d===0?"D-DAY":"기한 지남")} 리마인드\n· ${e.title}\n· 기한 ${e.due} / 담당 ${e.owner}\n· 확인·처리 후 '완료'로 회신 부탁드립니다`,
 };
@@ -341,7 +356,6 @@ const DEMO = [
   ["기말 교재 발주(밤새프린트)","2026-06-09","교재","다미T","doing","없음","100g A4·무광 스노우지 표지, 필요일 일주일 전 발주","" ],
   ["네이버 밴드 전원 가입","2026-06-07","행정","전체","doing","없음","공지 체계 일원화. 진도·범위를 밴드 공지 댓글로","https://band.us/n/a0a3bbwaO1F0S"],
   ["블로그+산사모 글쓰기","2026-06-07","홍보","전체","doing","매주","주 1회. 내 반은 내가 홍보. 일요일 마감","" ],
-  ["모고 진도(주 2회)","2026-06-09","모고","전체","doing","매주","1·2학년 주 2회, 6월 학평 대비","" ],
   ["시험지 노션 취합","2026-06-08","행정","조교전체","doing","없음","학교별 시험지 PDF·한글 노션 업로드(조교)","" ],
   ["수능특강 영상 촬영","2026-06-12","행정","은규T","doing","없음","독서부터, 남은 문학","" ],
   ["2021 고2 모고 분석지(2차분)","2026-06-11","모고","지연T","todo","없음","목요일까지","" ],
@@ -371,7 +385,16 @@ const ICON={
   chevL:'<svg class="ic" viewBox="0 0 24 24"><path d="M14.5 6l-6 6 6 6"/></svg>',
   chevR:'<svg class="ic" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6"/></svg>',
   check:'<svg class="ic" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></svg>',
+  target:'<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.6" fill="currentColor"/></svg>',
 };
+function renderGoal(){
+  var g=CONFIG.goal, el=$("#goalBanner");
+  if(!g||!g.text){ el.style.display="none"; return; }
+  el.style.display="block";
+  el.innerHTML='<div class="gtag">'+ICON.target+esc(g.tag||"목표")+'</div>'
+    +'<div class="gtext">'+esc(g.text)+'</div>'
+    +(g.desc?'<div class="gdesc">'+esc(g.desc)+'</div>':'');
+}
 
 /* CSV 파서 */
 function parseCSV(text){const rows=[];let row=[],cur="",q=false;
@@ -430,7 +453,7 @@ async function load(){let rows=DEMO;CHECKS={};DEMOMODE=true;
     else if(CONFIG.sheetCsvUrl){const r=await fetch(CONFIG.sheetCsvUrl);const csv=parseCSV(await r.text());csv.shift();rows=csv;DEMOMODE=false;}
   }catch(err){console.warn("로드 실패, 데모로 대체",err);rows=DEMO;CHECKS={};DEMOMODE=true;}
   $("#demoBanner").style.display=DEMOMODE?"inline-flex":"none";
-  ALL=expand(rows.map(toEvent));buildFilters();renderIdentity();applyLayout();render();}
+  ALL=expand(rows.map(toEvent));renderGoal();buildFilters();renderIdentity();applyLayout();render();}
 
 /* ============================================================ 본인 식별(PIN) */
 async function verifyPin(name,pin){
