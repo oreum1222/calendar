@@ -368,7 +368,8 @@ function sendSmsReminders(){
   var items=[];
   events.forEach(function(ev){
     if(!ev.due || ev.status==='done') return;
-    var s=(ev.repeat==='매주'||ev.repeat==='매월')?startRep:startOnce;
+    if(ev.repeat==='매주' || ev.repeat==='매월') return;   // 반복 일정은 문자 제외(메일로만 안내)
+    var s=startOnce;
     var asg=assigneesOf(ev.owner, roster);
     occurrences(ev.due, ev.repeat, s, occEnd).forEach(function(d){
       items.push({title:ev.title, due:d, dueStr:ymd(d), assignees:asg});
