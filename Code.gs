@@ -129,25 +129,47 @@ function ddays(a,b){ return Math.round((a-b)/86400000); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]);}); }
 
 function getRoster(){
-  var emailOf={}, teachers=[], assistants=[];
+  var emailOf={}, phoneOf={}, teachers=[], assistants=[];
   function read(sheet, arr){
     var m=rowsOf(sheet);
     for(var i=1;i<m.length;i++){
       var name=String(m[i][0]||'').trim(); if(!name) continue;
       arr.push(name);
       var email=String(m[i][2]||'').trim(); if(email) emailOf[name]=email;
+      var phone=String(m[i][3]||'').trim(); if(phone) phoneOf[name]=phone;   // D열: 전화번호
     }
   }
   read('강사',teachers); read('조교',assistants);
-  return {emailOf:emailOf, teachers:teachers, assistants:assistants};
+  return {emailOf:emailOf, phoneOf:phoneOf, teachers:teachers, assistants:assistants};
 }
+
+/* 코드로 추가/수정하는 일정 — index.html CONFIG.extraEvents / overrides 와 동일하게 유지(메일·문자도 이걸 인식) */
+var EXTRA_EVENTS = [
+  ["한티메가 교재 1차 마감","2026-06-15","교재","가경T, 조교전체","todo","없음","중요"],
+  ["CSM 가천대 시즌1 강의 촬영","2026-06-20","출제","가경T, 다미T, 원철T","doing","없음","촬영 6/14~6/20"],
+  ["CSM 가천대 시즌2 출제 마감","2026-06-20","출제","다미T, 원철T","todo","없음",""],
+  ["CSM 가천대 시즌3 출제 마감","2026-06-30","출제","다미T, 원철T","todo","없음",""]
+];
+var OVERRIDES = { "수능특강 영상 촬영": { owner:"은규T, 가경T, 다미T" } };
+var HIDE_TITLES = ["모고 진도(주 2회)"];
+
 function getEventsArr(){
-  var ev=rowsOf('일정'), out=[];
+  var ev=rowsOf('일정'), out=[], seen={};
   for(var i=1;i<ev.length;i++){ var r=ev[i]; if(!r[0]) continue;
-    out.push({title:String(r[0]).trim(), due:ymd(r[1]), cat:String(r[2]||'').trim(),
+    var title=String(r[0]).trim();
+    if(HIDE_TITLES.indexOf(title)>=0) continue;
+    var o={title:title, due:ymd(r[1]), cat:String(r[2]||'').trim(),
       owner:String(r[3]||'전체').trim(), status:String(r[4]||'todo').trim().toLowerCase(),
-      repeat:String(r[5]||'없음').trim(), memo:String(r[6]||'').trim()});
+      repeat:String(r[5]||'없음').trim(), memo:String(r[6]||'').trim()};
+    var ov=OVERRIDES[title]; if(ov){ if(ov.owner!==undefined)o.owner=ov.owner; if(ov.status!==undefined)o.status=ov.status; }
+    out.push(o); seen[title+'||'+o.due]=true;
   }
+  EXTRA_EVENTS.forEach(function(r){
+    var o={title:String(r[0]).trim(), due:String(r[1]).trim(), cat:String(r[2]||'').trim(),
+      owner:String(r[3]||'전체').trim(), status:String(r[4]||'todo').trim().toLowerCase(),
+      repeat:String(r[5]||'없음').trim(), memo:String(r[6]||'').trim()};
+    if(!seen[o.title+'||'+o.due]) out.push(o);
+  });
   return out;
 }
 function getChecksMap(){
@@ -302,4 +324,100 @@ function setupTriggers(){
   ScriptApp.newTrigger('sendReminders').timeBased().atHour(14).nearMinute(0).everyDays(1).create();
   ScriptApp.newTrigger('sendReminders').timeBased().atHour(21).nearMinute(0).everyDays(1).create();
   Logger.log('triggers set: 매일 14시·21시');
+}
+
+/* ════════════════════════════════════════════════════════════
+   문자(SMS) 자동발송 — Solapi (마감 미체크자 대상)
+   · 비밀값: 프로젝트 설정 → 스크립트 속성 SOLAPI_KEY / SOLAPI_SECRET / SOLAPI_SENDER
+   · 명단: 강사/조교 시트 D열(전화번호)
+   · 켜기: setupSmsTrigger() 1회 실행(매일 SMS_HOUR시). 테스트: 속성 SMS_DRYRUN=1 후 sendSmsReminders()
+   · 인증: HMAC-SHA256 (date+salt 를 Secret으로 서명)  ← 기존 Solapi 방식 그대로
+   ════════════════════════════════════════════════════════════ */
+var SMS_DDAY_MAX = 0;   // 이 값 이하(0=지남·오늘)인 미체크 건이 있으면 발송. 1로 바꾸면 D-1 포함.
+var SMS_HOUR     = 9;   // 매일 발송 시각(시). setupSmsTrigger로 등록.
+var CAL_URL      = 'https://oreum1222.github.io/calendar/';
+
+function solapiAuth_(key, secret){
+  var date = new Date().toISOString();
+  var salt = Utilities.getUuid().replace(/-/g, '');
+  var raw  = Utilities.computeHmacSha256Signature(date + salt, secret);
+  var hex  = raw.map(function(b){ var v=(b<0?b+256:b).toString(16); return v.length===1?'0'+v:v; }).join('');
+  return 'HMAC-SHA256 apiKey=' + key + ', date=' + date + ', salt=' + salt + ', signature=' + hex;
+}
+function digits_(s){ return String(s||'').replace(/[^0-9]/g,''); }
+
+/* 인증 확인용: 잔액 조회(200이면 키 정상) */
+function checkSolapi(){
+  var p=PropertiesService.getScriptProperties();
+  var res=UrlFetchApp.fetch('https://api.solapi.com/cash/v1/balance',
+    { headers:{ Authorization: solapiAuth_(p.getProperty('SOLAPI_KEY'), p.getProperty('SOLAPI_SECRET')) }, muteHttpExceptions:true });
+  Logger.log(res.getResponseCode()+' '+res.getContentText());
+}
+
+function sendSmsReminders(){
+  var p=PropertiesService.getScriptProperties();
+  var key=p.getProperty('SOLAPI_KEY'), secret=p.getProperty('SOLAPI_SECRET'), sender=p.getProperty('SOLAPI_SENDER');
+  var dryRun=(p.getProperty('SMS_DRYRUN')==='1') || !(key&&secret&&sender);
+
+  var roster=getRoster(), events=getEventsArr(), checks=getChecksMap();
+  var today=midnight(new Date());
+  var occEnd=new Date(today); occEnd.setDate(occEnd.getDate()+Math.max(0,SMS_DDAY_MAX));
+  var startOnce=new Date(today); startOnce.setDate(startOnce.getDate()-WIN_PAST_ONCE);
+  var startRep=new Date(today); startRep.setDate(startRep.getDate()-WIN_PAST_REPEAT);
+
+  var items=[];
+  events.forEach(function(ev){
+    if(!ev.due || ev.status==='done') return;
+    var s=(ev.repeat==='매주'||ev.repeat==='매월')?startRep:startOnce;
+    var asg=assigneesOf(ev.owner, roster);
+    occurrences(ev.due, ev.repeat, s, occEnd).forEach(function(d){
+      items.push({title:ev.title, due:d, dueStr:ymd(d), assignees:asg});
+    });
+  });
+
+  var names=roster.teachers.concat(roster.assistants), messages=[];
+  names.forEach(function(name){
+    var phone=roster.phoneOf[name]; if(!phone) return;
+    var miss=items.filter(function(it){
+      return it.assignees.indexOf(name)>=0 && ddays(it.due,today)<=SMS_DDAY_MAX && !isDone(checks,it.title,it.dueStr,name);
+    }).sort(function(a,b){return a.due-b.due;});
+    if(!miss.length) return;
+    var head=miss.slice(0,3).map(function(it){ return (ddays(it.due,today)<0?'[지남]':'[오늘]')+it.title; }).join(', ');
+    var more=miss.length>3?(' 외 '+(miss.length-3)+'건'):'';
+    var text='[오름] '+name+' 마감 미체크 '+miss.length+'건: '+head+more+'\n캘린더에서 체크 부탁드립니다 '+CAL_URL;
+    messages.push({to:digits_(phone), name:name, text:text, count:miss.length});
+  });
+
+  if(!messages.length){ Logger.log('SMS: 발송 대상 없음'); return 0; }
+
+  if(dryRun){
+    messages.forEach(function(m){ logSms_(m.name, m.to, m.count, '테스트(dryRun)', '', ''); });
+    Logger.log('SMS dryRun '+messages.length+'건 (실제 발송 안 함). 키 없거나 SMS_DRYRUN=1');
+    return messages.length;
+  }
+
+  var payload={ messages: messages.map(function(m){ return {to:m.to, from:digits_(sender), text:m.text}; }) };
+  var res=UrlFetchApp.fetch('https://api.solapi.com/messages/v4/send-many/detail', {
+    method:'post', contentType:'application/json',
+    headers:{ Authorization: solapiAuth_(key,secret) },
+    payload: JSON.stringify(payload), muteHttpExceptions:true
+  });
+  var body={}; try{ body=JSON.parse(res.getContentText()||'{}'); }catch(_){}
+  var failed={}; (body.failedMessageList||[]).forEach(function(f){ failed[digits_(f.to)]=f.statusMessage||'실패'; });
+  var ok=0; messages.forEach(function(m){ var er=failed[m.to]; logSms_(m.name, m.to, m.count, er?'실패':'발송', (body.groupInfo||{}).groupId||'', er||''); if(!er)ok++; });
+  Logger.log('SMS sent '+ok+'/'+messages.length+' (HTTP '+res.getResponseCode()+')');
+  return ok;
+}
+
+function logSms_(name, to, count, result, groupId, err){
+  var sh=SS.getSheetByName('문자로그');
+  if(!sh){ sh=SS.insertSheet('문자로그'); sh.appendRow(['시각','이름','번호','건수','결과','groupId','오류']); }
+  var masked = to.length>=7 ? (to.slice(0,3)+'****'+to.slice(-4)) : to;
+  sh.appendRow([Utilities.formatDate(new Date(),TZ,'yyyy-MM-dd HH:mm'), name, masked, count, result, groupId, err]);
+}
+
+function setupSmsTrigger(){
+  ScriptApp.getProjectTriggers().forEach(function(t){ if(t.getHandlerFunction()==='sendSmsReminders') ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('sendSmsReminders').timeBased().atHour(SMS_HOUR).nearMinute(0).everyDays(1).create();
+  Logger.log('SMS 트리거: 매일 '+SMS_HOUR+'시');
 }
