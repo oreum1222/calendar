@@ -148,10 +148,14 @@ var EXTRA_EVENTS = [
   ["한티메가 교재 1차 마감","2026-06-15","교재","가경T, 조교전체","todo","없음","중요"],
   ["CSM 가천대 시즌1 강의 촬영","2026-06-20","출제","가경T, 다미T, 원철T","doing","없음","촬영 6/14~6/20"],
   ["CSM 가천대 시즌2 출제 마감","2026-06-20","출제","다미T, 원철T","todo","없음",""],
-  ["CSM 가천대 시즌3 출제 마감","2026-06-30","출제","다미T, 원철T","todo","없음",""]
+  ["CSM 가천대 시즌3 출제 마감","2026-06-30","출제","다미T, 원철T","todo","없음",""],
+  ["산본고 여름방학","2026-07-10","학사","전체","doing","없음","7/10(금)~8/21(금)"],
+  ["군중고 여름방학","2026-07-20","학사","전체","doing","없음","7/20(월)~8/5(수)"],
+  ["용호고 여름방학","2026-07-21","학사","전체","doing","없음","7/21(화)~8/6(목)"]
 ];
 var OVERRIDES = { "수능특강 영상 촬영": { owner:"은규T, 가경T, 다미T" } };
 var HIDE_TITLES = ["모고 진도(주 2회)"];
+var INFO_CATS = ["학사"];   // 정보성 구분 — 리마인더(문자·메일)에서 제외(캘린더 화면엔 표시)
 
 function getEventsArr(){
   var ev=rowsOf('일정'), out=[], seen={};
@@ -161,6 +165,7 @@ function getEventsArr(){
     var o={title:title, due:ymd(r[1]), cat:String(r[2]||'').trim(),
       owner:String(r[3]||'전체').trim(), status:String(r[4]||'todo').trim().toLowerCase(),
       repeat:String(r[5]||'없음').trim(), memo:String(r[6]||'').trim()};
+    if(INFO_CATS.indexOf(o.cat)>=0) continue;   // 학사 등 정보성은 리마인더 제외
     var ov=OVERRIDES[title]; if(ov){ if(ov.owner!==undefined)o.owner=ov.owner; if(ov.status!==undefined)o.status=ov.status; }
     out.push(o); seen[title+'||'+o.due]=true;
   }

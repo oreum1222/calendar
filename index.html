@@ -334,7 +334,9 @@ const CONFIG = {
   apiUrl: "https://script.google.com/macros/s/AKfycbycR20HiYZS9LkxMr2vbEiRLflfWlqmLdydtoj_CKTgacLsh91hYaNCXs5AfwKwAER4Pw/exec",
   teachers: ["가경T","은규T","지연T","다미T","해솔T","원철T"],   // 강사 = '전체'의 구성원
   assistants: ["이유섭","오수아","김주은","백수정","김규민","김재희","장서윤","정경은","진채현"], // 조교 9명 — '전체'엔 미포함. 개별 이름 또는 '조교전체'로 배정
-  categories: ["설명회","내신","교재","출제","모고","행정","홍보"],
+  categories: ["설명회","내신","교재","출제","모고","행정","홍보","학사"],
+  // 정보성 구분(체크리스트·독촉 없이 표시, 문자·메일 리마인드 제외) — 예: 방학·시험기간 안내
+  infoCategories: ["학사"],
   // 이달의 목표 배너(상단 강조). text를 비우면 숨김.
   goal: { tag:"6월 목표", text:"학교별 내신 대비 교재 제작", desc:"학교별 시험범위 확정 → 교재 제작·검수 → 배부. 6월 최우선." },
   // 화면에서 숨길 일정 제목(시트는 그대로 둬도 화면엔 안 뜸)
@@ -345,6 +347,9 @@ const CONFIG = {
     ["CSM 가천대 시즌1 강의 촬영","2026-06-20","출제","가경T, 다미T, 원철T","doing","없음","촬영 기간 6/14~6/20","" ],
     ["CSM 가천대 시즌2 출제 마감","2026-06-20","출제","다미T, 원철T","todo","없음","가천대 약술 시즌2","" ],
     ["CSM 가천대 시즌3 출제 마감","2026-06-30","출제","다미T, 원철T","todo","없음","가천대 약술 시즌3","" ],
+    ["산본고 여름방학","2026-07-10","학사","전체","doing","없음","7/10(금)~8/21(금)","" ],
+    ["군중고 여름방학","2026-07-20","학사","전체","doing","없음","7/20(월)~8/5(수)","" ],
+    ["용호고 여름방학","2026-07-21","학사","전체","doing","없음","7/21(화)~8/6(목)","" ],
   ],
   // 시트 기존 일정 속성 덮어쓰기(제목으로 매칭)
   overrides: {
@@ -578,6 +583,8 @@ function evHTML(e){
   const slabel={todo:"진행 전",doing:"진행 중",done:"완료",past:"기한 지남"}[vs];
   const rep=e.repeat&&e.repeat!=="없음"?`<span class="mi">${ICON.repeat}${esc(e.repeat)}</span>`:"";
   const link=e.link?`<button class="ghost lk" onclick="window.open('${e.link}','_blank')">${ICON.link}바로가기</button>`:"";
+  // 정보성 구분(학사 등)은 체크리스트·독촉·상태 없이 안내만
+  const isInfo=(CONFIG.infoCategories||[]).includes(e.cat);
   // 담당 체크리스트
   const total=e.assignees.length, done=doneCount(e);
   const chips=e.assignees.map(n=>{
@@ -586,19 +593,19 @@ function evHTML(e){
     const clk=mine?` onclick="toggleCheck(${e._idx})"`:"";
     return `<button class="${cls}"${clk}>${esc(n)}${dn?ICON.check:""}</button>`;
   }).join("");
-  const chk=`<div class="chk"><span class="chk-prog ${done===total&&total?"full":""}">${done}/${total} 완료</span>${chips}</div>`;
+  const chk=isInfo?"":`<div class="chk"><span class="chk-prog ${done===total&&total?"full":""}">${done}/${total} 완료</span>${chips}</div>`;
   return `<article class="ev ${vs}">
     <div class="dday ${vs}"><b>${big}</b><span>${small||ds}</span></div>
     <div class="emain">
       <div class="etitle">${esc(e.title)}</div>
       <div class="emeta">
-        <span class="mi"><span class="sdot ${vs}"></span>${slabel}</span>
+        ${isInfo?`<span class="mi"><span class="sdot doing"></span>안내</span>`:`<span class="mi"><span class="sdot ${vs}"></span>${slabel}</span>`}
         <span class="cat">${esc(e.cat)}</span>${rep}
         <span>${ds}</span>
       </div>
       ${e.memo?(e.memo.trim().startsWith("!")?`<div class="memo hot">${esc(e.memo.replace(/^!+\s*/,""))}</div>`:`<div class="memo">${esc(e.memo)}</div>`):""}
       ${chk}
-      <div class="eact"><button class="ghost" onclick='copyRemind(${e._idx})'>${ICON.copy}독촉문구 복사</button>${link}</div>
+      <div class="eact">${isInfo?"":`<button class="ghost" onclick='copyRemind(${e._idx})'>${ICON.copy}독촉문구 복사</button>`}${link}</div>
     </div></article>`;
 }
 function renderList(){
