@@ -308,11 +308,11 @@
   <div class="idbox">
     <div class="eb">CHECK-IN</div>
     <h3>나는 누구인가요?</h3>
-    <p>체크를 남기려면 본인 확인이 필요해요</p>
+    <p>① 본인 이름 선택 → ② PIN(휴대폰 번호 뒷 4자리) 입력</p>
     <label class="ilab">이름</label>
     <select id="idName"></select>
-    <label class="ilab">PIN</label>
-    <input id="idPin" type="password" inputmode="numeric" placeholder="개인 PIN" autocomplete="off" />
+    <label class="ilab">PIN — 휴대폰 뒷 4자리</label>
+    <input id="idPin" type="password" inputmode="numeric" placeholder="휴대폰 번호 뒷 4자리" autocomplete="off" />
     <div class="ihint" id="idHint">데모 PIN — 가경T 1212 · 은규T 1111 · 지연T 2222 · 다미T 3333 · 해솔T 4444 · 원철T 5555</div>
     <div class="ierr" id="idErr"></div>
     <div class="ibtns">
@@ -507,7 +507,7 @@ window.clearMe=function(){ME="";MEPIN="";sessionStorage.removeItem("oreum_me");s
 window.openId=function(){
   const sel=$("#idName");
   const grp=(label,arr)=>`<optgroup label="${label}">`+arr.map(m=>`<option>${esc(m)}</option>`).join("")+`</optgroup>`;
-  sel.innerHTML=grp("강사",CONFIG.teachers)+grp("조교",CONFIG.assistants);
+  sel.innerHTML=`<option value="" disabled selected>— 본인 이름을 선택하세요 —</option>`+grp("강사",CONFIG.teachers)+grp("조교",CONFIG.assistants);
   if(ME)sel.value=ME;
   $("#idPin").value="";$("#idErr").textContent="";
   const hint=$("#idHint");
@@ -517,6 +517,7 @@ window.openId=function(){
 window.closeId=function(){$("#idModal").style.display="none";};
 window.confirmId=async function(){
   const name=$("#idName").value,pin=$("#idPin").value.trim();
+  if(!name){$("#idErr").textContent="먼저 본인 이름을 선택하세요.";return;}
   if(!pin){$("#idErr").textContent="PIN을 입력하세요.";return;}
   $("#idErr").textContent="확인 중…";
   const ok=await verifyPin(name,pin);
