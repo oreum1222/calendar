@@ -18,7 +18,24 @@
     --serif:'Noto Serif KR',serif;
     --sans:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
     --ondark:#08120f;
+    --past:#0e1118;
   }
+  /* ===== 라이트 테마 ===== */
+  html[data-theme="light"]{
+    --bg:#eef1f7; --card:#ffffff; --card2:#f3f5fb; --bdr:#e2e7f1; --bdr2:#ccd5e6;
+    --t1:#1b2433; --t2:#48536a; --t3:#7c8699;
+    --mint:#0e9e82; --mintD:#0a7c66; --mintG:rgba(14,158,130,.12);
+    --coral:#e24668; --coralG:rgba(226,70,104,.10);
+    --amber:#b9860b; --amberG:rgba(185,134,11,.14);
+    --blue:#2f6fd0; --blueG:rgba(47,111,208,.10);
+    --ondark:#ffffff; --past:#eaeef6;
+  }
+  html[data-theme="light"] .gate{background:radial-gradient(circle at 50% 28%,#dff3ee 0%,var(--bg) 62%);}
+  html[data-theme="light"] .gate .box,
+  html[data-theme="light"] .idbox{box-shadow:0 18px 50px rgba(40,60,90,.16);}
+  html[data-theme="light"] .idmodal{background:rgba(30,45,70,.30);}
+  html[data-theme="light"] .ev:hover{box-shadow:0 6px 22px rgba(40,60,90,.12);}
+  html[data-theme="light"] .toast{box-shadow:0 8px 26px rgba(40,60,90,.18);}
   *{box-sizing:border-box;word-break:keep-all;overflow-wrap:break-word;}
   html,body{margin:0;padding:0;}
   body{font-family:var(--sans);background:var(--bg);color:var(--t1);font-size:15px;line-height:1.6;
@@ -91,8 +108,10 @@
   .tabs button.on{background:var(--mint);color:var(--ondark);border-color:var(--mint);}
 
   /* ===== 레이아웃 ===== */
-  .layout{display:grid;grid-template-columns:minmax(0,0.82fr) minmax(0,1fr);gap:22px;align-items:start;}
+  /* 데스크톱: 달력(풀폭) 위 → 임박 리스트 아래로 세로 배치 */
+  .layout{display:grid;grid-template-columns:1fr;gap:26px;align-items:start;}
   .col-cal{align-self:start;}
+  .col-list{margin-top:2px;}
   .coltitle{display:flex;align-items:center;gap:8px;font-family:var(--serif);font-weight:600;font-size:16px;
     color:var(--mint);margin:2px 2px 12px;}
   .coltitle .ic{width:17px;height:17px;color:var(--mint);}
@@ -109,7 +128,7 @@
   .ev{display:flex;gap:13px;background:var(--card);border:1px solid var(--bdr);border-radius:14px;
     padding:14px 15px;margin-bottom:10px;transition:.13s;}
   .ev:hover{border-color:var(--bdr2);box-shadow:0 6px 22px rgba(0,0,0,.35);transform:translateY(-1px);}
-  .ev.past{background:#0e1118;} .ev.past .etitle,.ev.done .etitle{color:var(--t3);text-decoration:line-through;text-decoration-color:var(--bdr2);}
+  .ev.past{background:var(--past);} .ev.past .etitle,.ev.done .etitle{color:var(--t3);text-decoration:line-through;text-decoration-color:var(--bdr2);}
   .dday{flex:none;width:62px;text-align:center;border-radius:11px;padding:9px 4px;border:1px solid transparent;}
   .dday b{display:block;font-family:var(--serif);font-size:17px;font-weight:700;line-height:1;letter-spacing:-.5px;}
   .dday span{display:block;font-size:10.5px;margin-top:4px;font-weight:600;opacity:.85;}
@@ -143,18 +162,18 @@
     display:flex;align-items:center;justify-content:center;color:var(--mint);cursor:pointer;}
   .calnav button:hover{background:var(--mintG);}
   .calnav button .ic{width:16px;height:16px;}
-  .grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;}
-  .dow{text-align:center;font-size:11px;font-weight:700;color:var(--t3);padding:2px 0 6px;}
+  .grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;}
+  .dow{text-align:center;font-size:12.5px;font-weight:700;color:var(--t3);padding:4px 0 8px;}
   .dow.sun{color:var(--coral);} .dow.sat{color:var(--blue);}
-  .cell{border:1px solid var(--bdr);border-radius:9px;min-height:58px;padding:5px 5px 4px;cursor:pointer;background:var(--card2);transition:.1s;}
+  .cell{border:1px solid var(--bdr);border-radius:10px;min-height:104px;padding:8px 8px 6px;cursor:pointer;background:var(--card2);transition:.1s;}
   .cell:hover{border-color:var(--mintD);}
   .cell.out{background:transparent;border-color:transparent;cursor:default;}
   .cell.today{border-color:var(--amber);background:rgba(245,200,66,.08);box-shadow:inset 0 0 0 1px var(--amber);}
-  .cell .dn{font-family:var(--serif);font-size:12px;font-weight:600;color:var(--t2);}
+  .cell .dn{font-family:var(--serif);font-size:13.5px;font-weight:600;color:var(--t2);}
   .cell.today .dn{color:var(--amber);}
   .cell.sun .dn{color:var(--coral);}
-  .dots{margin-top:3px;display:flex;flex-direction:column;gap:2px;}
-  .evp{font-size:9.5px;line-height:1.3;border-radius:4px;padding:1px 4px;white-space:nowrap;overflow:hidden;
+  .dots{margin-top:5px;display:flex;flex-direction:column;gap:3px;}
+  .evp{font-size:11px;line-height:1.35;border-radius:5px;padding:2px 6px;white-space:nowrap;overflow:hidden;
     text-overflow:ellipsis;font-weight:600;border:1px solid transparent;}
   .evp.todo{background:var(--coralG);color:var(--coral);border-color:rgba(255,107,138,.25);}
   .evp.doing{background:var(--blueG);color:var(--blue);border-color:rgba(91,156,245,.25);}
@@ -221,6 +240,28 @@
   .solidbtn{background:var(--mint);color:var(--ondark);border-color:var(--mint);}
   .solidbtn:hover{background:var(--mintD);color:#fff;}
 
+  /* ===== 헤더 우측 / 테마 토글 ===== */
+  .hright{display:flex;align-items:center;gap:14px;}
+  .themebtn{flex:none;width:40px;height:40px;border-radius:11px;border:1px solid var(--bdr);background:var(--card2);
+    color:var(--mint);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;}
+  .themebtn:hover{background:var(--mintG);border-color:var(--mintD);}
+  .themebtn .ic{width:19px;height:19px;}
+
+  /* ===== 오늘·내일 마감 팝업 ===== */
+  .duebox{max-width:380px;border-top-color:var(--coral);}
+  .duebox .eb{color:var(--coral);}
+  .duelist{margin:4px 0 2px;display:flex;flex-direction:column;gap:8px;max-height:340px;overflow:auto;}
+  .dueitem{display:flex;align-items:center;gap:11px;background:var(--card2);border:1px solid var(--bdr);border-radius:12px;padding:10px 12px;}
+  .duetag{flex:none;font-family:var(--serif);font-size:12.5px;font-weight:700;border-radius:8px;padding:5px 9px;min-width:52px;text-align:center;}
+  .duetag.today{background:var(--coralG);color:var(--coral);border:1px solid rgba(255,107,138,.3);}
+  .duetag.todo{background:var(--amberG);color:var(--amber);border:1px solid rgba(245,200,66,.3);}
+  .dueinfo{min-width:0;}
+  .duename{font-weight:700;font-size:14.5px;color:var(--t1);letter-spacing:-.2px;}
+  .duesub{font-size:12px;color:var(--t2);margin-top:2px;}
+  .duecat{font-size:11px;font-weight:700;color:var(--mint);}
+  .dueskip{display:flex;align-items:center;gap:7px;justify-content:center;margin-top:12px;font-size:12px;color:var(--t3);cursor:pointer;}
+  .dueskip input{width:15px;height:15px;accent-color:var(--mint);cursor:pointer;}
+
   .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(16px);background:var(--card2);
     color:var(--t1);padding:11px 20px;border:1px solid var(--bdr2);border-radius:999px;font-size:13px;font-weight:600;opacity:0;transition:.25s;z-index:60;pointer-events:none;}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
@@ -237,10 +278,13 @@
     .coltitle{display:none;}
     .demo{margin-left:0;}
     .summary{gap:14px;}
+    .cell{min-height:60px;padding:5px 5px 4px;}
+    .grid{gap:4px;} .evp{font-size:9.5px;padding:1px 4px;} .cell .dn{font-size:12px;}
   }
 </style>
 </head>
 <body>
+<script>try{var _t=localStorage.getItem('oreum_theme');if(_t)document.documentElement.dataset.theme=_t;}catch(e){}</script>
 
 <!-- 비밀번호 게이트 -->
 <div class="gate" id="gate">
@@ -261,7 +305,10 @@
       <div class="eyebrow">[오름] 국어학원</div>
       <h1>마감 <em>캘린더</em></h1>
     </div>
-    <div class="hdate" id="todayStr"></div>
+    <div class="hright">
+      <div class="hdate" id="todayStr"></div>
+      <button class="themebtn" id="themeBtn" title="라이트/다크 전환" aria-label="라이트/다크 전환"></button>
+    </div>
   </div>
 </header>
 
@@ -319,6 +366,18 @@
       <button class="ibtn ghostbtn" onclick="closeId()">취소</button>
       <button class="ibtn solidbtn" onclick="confirmId()">확인</button>
     </div>
+  </div>
+</div>
+
+<!-- 오늘·내일 마감 알림 팝업 -->
+<div class="idmodal" id="duePop">
+  <div class="idbox duebox">
+    <div class="eb">REMINDER</div>
+    <h3 id="dueHead">마감 임박 알림</h3>
+    <p id="dueSubHead">오늘·내일 마감인데 아직 안 끝난 일정이에요</p>
+    <div class="duelist" id="dueList"></div>
+    <div class="ibtns"><button class="ibtn solidbtn" onclick="closeDuePop()">확인했어요</button></div>
+    <label class="dueskip"><input type="checkbox" id="dueSkip"> 오늘 하루 이 알림 그만 보기</label>
   </div>
 </div>
 
@@ -492,7 +551,7 @@ async function load(){let rows=DEMO;CHECKS={};DEMOMODE=true;
     if(o.memo!==undefined)e.memo=o.memo; if(o.cat!==undefined)e.cat=o.cat; if(o.status!==undefined)e.status=o.status;}});
   const seen=new Set(evs.map(e=>e.title+"||"+e.due));
   (CONFIG.extraEvents||[]).forEach(r=>{const e=toEvent(r); const k=e.title+"||"+e.due; if(!seen.has(k)){seen.add(k);evs.push(e);}});
-  ALL=expand(evs);renderGoal();buildFilters();renderIdentity();applyLayout();render();}
+  ALL=expand(evs);renderGoal();buildFilters();renderIdentity();applyLayout();render();showDuePopup();}
 
 /* ============================================================ 본인 식별(PIN) */
 async function verifyPin(name,pin){
@@ -679,6 +738,45 @@ function applyLayout(){
 $("#tList").onclick=()=>{view="list";applyLayout();};
 $("#tCal").onclick=()=>{view="cal";applyLayout();};
 mq.addEventListener("change",applyLayout);
+
+/* ============================================================ 테마(라이트/다크) */
+const ICON_SUN=`<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.6 4.6l1.7 1.7M17.7 17.7l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.6 19.4l1.7-1.7M17.7 6.3l1.7-1.7"/></svg>`;
+const ICON_MOON=`<svg class="ic" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 119.5 4a6.5 6.5 0 0010.5 10.5z"/></svg>`;
+function applyTheme(t){
+  document.documentElement.dataset.theme = (t==="light") ? "light" : "";
+  // 버튼엔 '전환될 테마'의 아이콘 표시: 현재 라이트면 달(다크로), 다크면 해(라이트로)
+  $("#themeBtn").innerHTML = (t==="light") ? ICON_MOON : ICON_SUN;
+  try{localStorage.setItem("oreum_theme", t==="light"?"light":"dark");}catch(e){}
+}
+let THEME=(function(){try{return localStorage.getItem("oreum_theme")==="light"?"light":"dark";}catch(e){return "dark";}})();
+applyTheme(THEME);
+$("#themeBtn").onclick=()=>{THEME=(THEME==="light")?"dark":"light";applyTheme(THEME);};
+
+/* ============================================================ 오늘·내일 마감 팝업 */
+function showDuePopup(){
+  try{ if(localStorage.getItem("oreum_due_skip_"+fmt(today))==="1") return; }catch(e){}
+  const info=CONFIG.infoCategories||[];
+  const due=ALL.filter(e=> !info.includes(e.cat) && e.status!=="done" && (e._dday===0||e._dday===1))
+               .sort((a,b)=>a._dday-b._dday || a._d-b._d);
+  if(!due.length) return;
+  const today_n=due.filter(e=>e._dday===0).length, tmr_n=due.filter(e=>e._dday===1).length;
+  $("#dueSubHead").textContent =
+    (today_n?`오늘 마감 ${today_n}건`:"")+(today_n&&tmr_n?" · ":"")+(tmr_n?`내일 마감 ${tmr_n}건`:"")+" — 아직 안 끝났어요";
+  $("#dueList").innerHTML = due.map(e=>{
+    const isToday=e._dday===0, tag=isToday?"D-DAY":"D-1", cls=isToday?"today":"todo";
+    const md=`${e._d.getMonth()+1}/${e._d.getDate()}(${DOW[e._d.getDay()]})`;
+    return `<div class="dueitem"><span class="duetag ${cls}">${tag}</span><div class="dueinfo">
+      <div class="duename">${esc(e.title)}</div>
+      <div class="duesub"><span class="duecat">${esc(e.cat)}</span> · ${esc(e.owner)} · ${md}</div>
+    </div></div>`;
+  }).join("");
+  $("#dueSkip").checked=false;
+  $("#duePop").style.display="flex";
+}
+window.closeDuePop=function(){
+  if($("#dueSkip").checked){try{localStorage.setItem("oreum_due_skip_"+fmt(today),"1");}catch(e){}}
+  $("#duePop").style.display="none";
+};
 
 /* ============================================================ 날짜/게이트 */
 $("#todayStr").textContent=`${today.getFullYear()}.${pad(today.getMonth()+1)}.${pad(today.getDate())} (${DOW[today.getDay()]})`;
