@@ -357,8 +357,8 @@ function setupTriggers(){
    · 켜기: setupSmsTrigger() 1회 실행(매일 SMS_HOUR시). 테스트: 속성 SMS_DRYRUN=1 후 sendSmsReminders()
    · 인증: HMAC-SHA256 (date+salt 를 Secret으로 서명)  ← 기존 Solapi 방식 그대로
    ════════════════════════════════════════════════════════════ */
-var SMS_DDAY_MAX = 0;   // 이 값 이하(0=지남·오늘)인 미체크 건이 있으면 발송. 1로 바꾸면 D-1 포함.
-var SMS_HOUR     = 9;   // 매일 발송 시각(시). setupSmsTrigger로 등록.
+var SMS_DDAY_MAX = 0;   // (occurrences 범위용) 0=오늘까지. 실제 발송 필터는 '마감 당일(D-DAY)'만 — 아래 sendSmsReminders 참고.
+var SMS_HOUR     = 18;  // 매일 발송 시각(시) — 마감 당일 18시에 1회. setupSmsTrigger로 등록(변경 시 재실행 필요).
 var CAL_URL      = 'https://oreum1222.github.io/calendar/';
 
 function solapiAuth_(key, secret){
@@ -404,12 +404,12 @@ function sendSmsReminders(){
   names.forEach(function(name){
     var phone=roster.phoneOf[name]; if(!phone) return;
     var miss=items.filter(function(it){
-      return it.assignees.indexOf(name)>=0 && ddays(it.due,today)<=SMS_DDAY_MAX && !isDone(checks,it.title,it.dueStr,name);
+      return it.assignees.indexOf(name)>=0 && ddays(it.due,today)===0 && !isDone(checks,it.title,it.dueStr,name);   // 마감 당일(D-DAY)만 18시 1회
     }).sort(function(a,b){return a.due-b.due;});
     if(!miss.length) return;
-    var head=miss.slice(0,3).map(function(it){ return (ddays(it.due,today)<0?'[지남]':'[오늘]')+it.title; }).join(', ');
+    var head=miss.slice(0,3).map(function(it){ return it.title; }).join(', ');
     var more=miss.length>3?(' 외 '+(miss.length-3)+'건'):'';
-    var text='[오름] '+name+' 마감 미체크 '+miss.length+'건: '+head+more+'\n캘린더에서 체크 부탁드립니다 '+CAL_URL;
+    var text='[오름] '+name+' 오늘 마감 '+miss.length+'건: '+head+more+'\n오늘 안에 처리 후 캘린더에서 체크 부탁드립니다 '+CAL_URL;
     messages.push({to:digits_(phone), name:name, text:text, count:miss.length});
   });
 
