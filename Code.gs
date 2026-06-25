@@ -192,6 +192,7 @@ function getEventsArr(){
     var o={title:String(r[0]).trim(), due:String(r[1]).trim(), cat:String(r[2]||'').trim(),
       owner:String(r[3]||'전체').trim(), status:String(r[4]||'todo').trim().toLowerCase(),
       repeat:String(r[5]||'없음').trim(), memo:String(r[6]||'').trim()};
+    if(INFO_CATS.indexOf(o.cat)>=0) return;   // 학사 등 정보성은 리마인더·알림 제외(코드 일정도 동일)
     if(!seen[o.title+'||'+o.due]) out.push(o);
   });
   return out;
@@ -445,4 +446,71 @@ function setupSmsTrigger(){
   ScriptApp.getProjectTriggers().forEach(function(t){ if(t.getHandlerFunction()==='sendSmsReminders') ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('sendSmsReminders').timeBased().atHour(SMS_HOUR).nearMinute(0).everyDays(1).create();
   Logger.log('SMS 트리거: 매일 '+SMS_HOUR+'시');
+}
+
+/* ════════════════════════════════════════════════════════════
+   새 일정 등록 알림 — 시트·코드 어느 쪽으로 새 일정을 올리든 담당자에게 메일 1회
+   · setupNewEventNotify() 1회 실행 → 기존 일정은 '이미 통보'로 시드(소급 발송 방지) + 30분마다 검사
+   · 이후 새로 추가된 일정만 담당자(이메일 등록자)에게 자동 메일. 중복·재발송 없음.
+   · 학사(안내)·완료·지난 일정은 메일 생략(통보 기록만).
+   ════════════════════════════════════════════════════════════ */
+function notifyNewEvents(){
+  var p=PropertiesService.getScriptProperties();
+  var seen={}; try{ seen=JSON.parse(p.getProperty('NOTIFIED_KEYS')||'{}'); }catch(e){ seen={}; }
+  var roster=getRoster(), events=getEventsArr(), today=midnight(new Date());
+  var byPerson={}, changed=false;
+  events.forEach(function(ev){
+    if(!ev.due) return;
+    var key=ev.title+'||'+ev.due;
+    if(seen[key]) return;
+    seen[key]=1; changed=true;                              // 새 일정 → 통보 기록
+    if(ev.status==='done') return;                          // 완료 일정은 메일 생략
+    if(ddays(parseYmd(ev.due), today) < 0) return;          // 지난 일정은 메일 생략
+    assigneesOf(ev.owner, roster).forEach(function(name){
+      (byPerson[name]=byPerson[name]||[]).push(ev);
+    });
+  });
+  if(changed) p.setProperty('NOTIFIED_KEYS', JSON.stringify(seen));
+
+  var stamp=Utilities.formatDate(new Date(), TZ, 'M/d HH:mm'), sent=0;
+  Object.keys(byPerson).forEach(function(name){
+    var email=roster.emailOf[name]; if(!email) return;
+    var evs=byPerson[name].sort(function(a,b){ return parseYmd(a.due)-parseYmd(b.due); });
+    var rows=evs.map(function(ev){
+      var d=parseYmd(ev.due), x=ddInfo(d, today);
+      return '<tr>'
+        +'<td style="padding:9px 10px;border-bottom:1px solid #eee;white-space:nowrap;vertical-align:top">'
+          +'<span style="display:inline-block;font-weight:700;font-size:12px;color:'+x.color+';background:'+x.color+'14;border:1px solid '+x.color+'40;border-radius:7px;padding:3px 8px">'+x.lab+'</span>'
+          +'<div style="font-size:11px;color:#888;margin-top:3px">'+fmtDue(d)+'</div>'
+        +'</td>'
+        +'<td style="padding:9px 10px;border-bottom:1px solid #eee;vertical-align:top">'
+          +'<div style="font-weight:600;font-size:14px;color:#222">'+esc(ev.title)+'</div>'
+          +'<div style="font-size:12px;color:#777;margin-top:2px">'+esc(ev.cat)+(ev.memo?' · '+esc(ev.memo.replace(/^!+\s*/,'')):'')+'</div>'
+        +'</td></tr>';
+    }).join('');
+    var html=''
+      +'<div style="font-family:\'Apple SD Gothic Neo\',\'Malgun Gothic\',sans-serif;max-width:600px;margin:0 auto;color:#222">'
+      +'<div style="background:#1f6f54;color:#fff;padding:16px 18px;border-radius:12px 12px 0 0">'
+        +'<div style="font-size:12px;letter-spacing:2px;opacity:.85">[오름] 국어학원 · 새 일정 등록</div>'
+        +'<div style="font-size:18px;font-weight:700;margin-top:3px">'+esc(name)+' · 새 담당 일정 '+evs.length+'건</div>'
+        +'<div style="font-size:11px;opacity:.8;margin-top:2px">'+stamp+' 등록 · 캘린더에 추가되었습니다</div>'
+      +'</div>'
+      +'<div style="border:1px solid #e6e6e6;border-top:none;border-radius:0 0 12px 12px;padding:14px 14px 18px">'
+      +'<table style="width:100%;border-collapse:collapse">'+rows+'</table>'
+      +'<div style="text-align:center;margin-top:16px"><a href="'+CAL_URL+'" style="display:inline-block;background:#1f6f54;color:#fff;text-decoration:none;font-weight:700;font-size:13px;padding:10px 18px;border-radius:9px">캘린더에서 확인</a></div>'
+      +'</div></div>';
+    MailApp.sendEmail({to:email, subject:'[오름] 새 일정 '+evs.length+'건 등록 — '+name+' ('+stamp+')', htmlBody:html});
+    sent++;
+  });
+  Logger.log('새 일정 알림: '+sent+'명에게 발송');
+  return sent;
+}
+
+function setupNewEventNotify(){
+  var p=PropertiesService.getScriptProperties(), seen={};
+  getEventsArr().forEach(function(ev){ if(ev.due) seen[ev.title+'||'+ev.due]=1; });   // 기존 일정 시드(소급 발송 방지)
+  p.setProperty('NOTIFIED_KEYS', JSON.stringify(seen));
+  ScriptApp.getProjectTriggers().forEach(function(t){ if(t.getHandlerFunction()==='notifyNewEvents') ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('notifyNewEvents').timeBased().everyMinutes(30).create();
+  Logger.log('새 일정 알림 트리거: 30분마다 · 기존 '+Object.keys(seen).length+'건 시드(소급 발송 안 함)');
 }
