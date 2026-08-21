@@ -552,3 +552,33 @@ function setupNewEventNotify(){
   ScriptApp.newTrigger('notifyNewEvents').timeBased().everyMinutes(30).create();
   Logger.log('새 일정 알림 트리거: 30분마다 · 기존 '+Object.keys(seen).length+'건 시드(소급 발송 안 함)');
 }
+
+/* ════════════════════════════════════════════════════════════
+   일회용 예약: 2026-08-21 22:30 → 가경T(원장)에게 '김세연/백수정 추가 정산' 메일+문자 1회
+   · setupSettleReminder2108() 1회 실행 → 해당 시각에 sendSettleReminder2108 자동 실행(발송 후 트리거 자기삭제)
+   ════════════════════════════════════════════════════════════ */
+function sendSettleReminder2108(){
+  var roster=getRoster(), name='가경T', msg='김세연/백수정 추가 정산';
+  var email=roster.emailOf[name], phone=roster.phoneOf[name];
+  if(email){
+    var html='<div style="font-family:\'Apple SD Gothic Neo\',\'Malgun Gothic\',sans-serif;max-width:520px;margin:0 auto;color:#222">'
+      +'<div style="background:#1f6f54;color:#fff;padding:15px 18px;border-radius:12px 12px 0 0"><div style="font-size:12px;letter-spacing:2px;opacity:.85">[오름] 국어학원 · 리마인드</div><div style="font-size:18px;font-weight:700;margin-top:3px">'+msg+'</div></div>'
+      +'<div style="border:1px solid #e6e6e6;border-top:none;border-radius:0 0 12px 12px;padding:16px 16px 20px;font-size:14px">오늘(8/21) 처리 예정 항목입니다.<br><b>'+msg+'</b> 진행 부탁드립니다.</div></div>';
+    MailApp.sendEmail({to:email, subject:'[오름] 리마인드 · '+msg, htmlBody:html});
+  }
+  if(phone){
+    var p=PropertiesService.getScriptProperties();
+    var key=p.getProperty('SOLAPI_KEY'), secret=p.getProperty('SOLAPI_SECRET'), sender=p.getProperty('SOLAPI_SENDER');
+    if(key&&secret&&sender){
+      var payload={ messages:[{ to:digits_(phone), from:digits_(sender), text:'[오름] 리마인드: '+msg }] };
+      UrlFetchApp.fetch('https://api.solapi.com/messages/v4/send-many/detail', { method:'post', contentType:'application/json', headers:{ Authorization: solapiAuth_(key,secret) }, payload: JSON.stringify(payload), muteHttpExceptions:true });
+    }
+  }
+  Logger.log('정산 리마인드 발송: '+name+' ('+email+' / '+phone+')');
+  ScriptApp.getProjectTriggers().forEach(function(t){ if(t.getHandlerFunction()==='sendSettleReminder2108') ScriptApp.deleteTrigger(t); });   // 발송 후 트리거 자기삭제
+}
+function setupSettleReminder2108(){
+  ScriptApp.getProjectTriggers().forEach(function(t){ if(t.getHandlerFunction()==='sendSettleReminder2108') ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('sendSettleReminder2108').timeBased().at(new Date(2026,7,21,22,30,0)).create();   // 2026-08-21 22:30 (Asia/Seoul)
+  Logger.log('정산 리마인드 예약: 2026-08-21 22:30');
+}
