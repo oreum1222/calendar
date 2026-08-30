@@ -586,3 +586,34 @@ function setupSettleReminder2108(){
   ScriptApp.newTrigger('sendSettleReminder2108').timeBased().at(new Date(2026,7,21,22,30,0)).create();   // 2026-08-21 22:30 (Asia/Seoul)
   Logger.log('정산 리마인드 예약: 2026-08-21 22:30');
 }
+
+/* ════════════════════════════════════════════════════════════
+   정경은(조교) 상시 점검 4종 — 매주 일요일 11시·14시 메일 리마인드
+   · setupJeongCheckTriggers() 1회 실행 → 이후 매주 일요일 11시·14시 sendJeongCheck 자동 발송
+   ════════════════════════════════════════════════════════════ */
+var JEONG_CHECK_ITEMS = ['출석부 완결','교재 수령 체크','주간지 수령 체크 (워크북·전주 해설지 포함)','학습 진단과 각종 양식 체크'];
+function sendJeongCheck(){
+  var roster=getRoster(), name='정경은', email=roster.emailOf[name];
+  if(!email){ Logger.log('정경은 이메일 없음 — 발송 생략'); return; }
+  var stamp=Utilities.formatDate(new Date(), TZ, 'M/d HH:mm');
+  var lis=JEONG_CHECK_ITEMS.map(function(t){ return '<li style="margin:7px 0;font-size:14px">'+esc(t)+'</li>'; }).join('');
+  var html='<div style="font-family:\'Apple SD Gothic Neo\',\'Malgun Gothic\',sans-serif;max-width:560px;margin:0 auto;color:#222">'
+    +'<div style="background:#1f6f54;color:#fff;padding:16px 18px;border-radius:12px 12px 0 0">'
+      +'<div style="font-size:12px;letter-spacing:2px;opacity:.85">[오름] 국어학원 · 상시 점검</div>'
+      +'<div style="font-size:18px;font-weight:700;margin-top:3px">정경은 · 상시 점검 4종</div>'
+      +'<div style="font-size:11px;opacity:.8;margin-top:2px">'+stamp+' · 일요일 정기 리마인드</div>'
+    +'</div>'
+    +'<div style="border:1px solid #e6e6e6;border-top:none;border-radius:0 0 12px 12px;padding:14px 18px 18px">'
+    +'<div style="font-size:13px;color:#555;margin:2px 0 8px">아래 4종을 확인·처리 부탁드립니다.</div>'
+    +'<ul style="margin:0;padding-left:20px">'+lis+'</ul>'
+    +'<div style="text-align:center;margin-top:16px"><a href="'+CAL_URL+'" style="display:inline-block;background:#1f6f54;color:#fff;text-decoration:none;font-weight:700;font-size:13px;padding:10px 18px;border-radius:9px">캘린더 열기</a></div>'
+    +'</div></div>';
+  MailApp.sendEmail({to:email, subject:'[오름] 정경은 · 상시 점검 4종 (일요일)', htmlBody:html});
+  Logger.log('정경은 점검 메일 발송: '+email);
+}
+function setupJeongCheckTriggers(){
+  ScriptApp.getProjectTriggers().forEach(function(t){ if(t.getHandlerFunction()==='sendJeongCheck') ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('sendJeongCheck').timeBased().onWeekDay(ScriptApp.WeekDay.SUNDAY).atHour(11).nearMinute(0).create();
+  ScriptApp.newTrigger('sendJeongCheck').timeBased().onWeekDay(ScriptApp.WeekDay.SUNDAY).atHour(14).nearMinute(0).create();
+  Logger.log('정경은 점검 트리거: 매주 일요일 11시·14시');
+}
