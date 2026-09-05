@@ -617,3 +617,42 @@ function setupJeongCheckTriggers(){
   ScriptApp.newTrigger('sendJeongCheck').timeBased().onWeekDay(ScriptApp.WeekDay.SUNDAY).atHour(14).nearMinute(0).create();
   Logger.log('정경은 점검 트리거: 매주 일요일 11시·14시');
 }
+
+/* ════════════════════════════════════════════════════════════
+   MEXX 주간 리마인드 (메일)
+   · 금 21시 → 워크북/교재 해설지 점검(검수) — 가경T·진채현·김예담
+   · 토 12시 → 배부 자료 최종 확인 — 가경T·진채현·김예담
+   · 수 23시 → 숙제 검사 프로그램 세팅 — 가경T
+   · setupMexxTriggers() 1회 실행으로 3개 주간 트리거 등록
+   ════════════════════════════════════════════════════════════ */
+function sendMexxMail_(names, title){
+  var roster=getRoster(), stamp=Utilities.formatDate(new Date(), TZ, 'M/d HH:mm'), sent=0, skipped=[];
+  names.forEach(function(name){
+    var email=roster.emailOf[name];
+    if(!email){ skipped.push(name); return; }
+    var html='<div style="font-family:\'Apple SD Gothic Neo\',\'Malgun Gothic\',sans-serif;max-width:520px;margin:0 auto;color:#222">'
+      +'<div style="background:#1f6f54;color:#fff;padding:15px 18px;border-radius:12px 12px 0 0">'
+        +'<div style="font-size:12px;letter-spacing:2px;opacity:.85">[오름] 국어학원 · MEXX 주간 리마인드</div>'
+        +'<div style="font-size:18px;font-weight:700;margin-top:3px">'+esc(title)+'</div>'
+      +'</div>'
+      +'<div style="border:1px solid #e6e6e6;border-top:none;border-radius:0 0 12px 12px;padding:16px 18px 20px;font-size:14px">'
+      +esc(name)+'님, 아래 업무 확인·처리 부탁드립니다.<br><b style="color:#1f6f54">'+esc(title)+'</b>'
+      +'<div style="text-align:center;margin-top:16px"><a href="'+CAL_URL+'" style="display:inline-block;background:#1f6f54;color:#fff;text-decoration:none;font-weight:700;font-size:13px;padding:10px 18px;border-radius:9px">캘린더 열기</a></div>'
+      +'</div></div>';
+    MailApp.sendEmail({to:email, subject:'[오름] '+title, htmlBody:html});
+    sent++;
+  });
+  Logger.log('MEXX 메일['+title+'] '+sent+'명 발송'+(skipped.length?(' · 이메일없음: '+skipped.join(',')):''));
+}
+function sendMexxCheck(){   sendMexxMail_(['가경T','진채현','김예담'], 'MEXX 수능반 워크북/교재 해설지 점검(검수)'); }
+function sendMexxDistrib(){ sendMexxMail_(['가경T','진채현','김예담'], 'MEXX 수능반 배부 자료 최종 확인'); }
+function sendMexxHwset(){   sendMexxMail_(['가경T'], 'MEXX 숙제 검사 프로그램 세팅'); }
+function setupMexxTriggers(){
+  ['sendMexxCheck','sendMexxDistrib','sendMexxHwset'].forEach(function(fn){
+    ScriptApp.getProjectTriggers().forEach(function(t){ if(t.getHandlerFunction()===fn) ScriptApp.deleteTrigger(t); });
+  });
+  ScriptApp.newTrigger('sendMexxCheck').timeBased().onWeekDay(ScriptApp.WeekDay.FRIDAY).atHour(21).nearMinute(0).create();
+  ScriptApp.newTrigger('sendMexxDistrib').timeBased().onWeekDay(ScriptApp.WeekDay.SATURDAY).atHour(12).nearMinute(0).create();
+  ScriptApp.newTrigger('sendMexxHwset').timeBased().onWeekDay(ScriptApp.WeekDay.WEDNESDAY).atHour(23).nearMinute(0).create();
+  Logger.log('MEXX 트리거 등록: 금 21시 / 토 12시 / 수 23시');
+}
